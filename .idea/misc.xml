@@ -9,6 +9,8 @@
         <option value="$PROJECT_DIR$/clientes/pom.xml" />
         <option value="$PROJECT_DIR$/eurekaserver/pom.xml" />
         <option value="$PROJECT_DIR$/cloudgateway/pom.xml" />
+        <option value="$PROJECT_DIR$/cloudgateway/cartoes/pom.xml" />
+        <option value="$PROJECT_DIR$/cartoes/pom.xml" />
       </list>
     </option>
   </component>
