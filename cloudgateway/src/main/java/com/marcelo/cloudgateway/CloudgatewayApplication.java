@@ -21,6 +21,7 @@ public class CloudgatewayApplication {
                 .routes()
                 .route("route1", r -> r.path("/api/clientes/**").uri("lb://clientes"))
                 .route("route2", r -> r.path("/api/cartoes/**").uri("lb://cartoes"))
+                .route("route3", r -> r.path("/api/avaliador/**").uri("lb://avaliador"))
                 .build();
     }
 
