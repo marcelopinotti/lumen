@@ -7,10 +7,10 @@ import lombok.Setter;
 @Setter
 public class DadosCliente {
 
-    private Long id;
+    private String cpf;
 
     private String nome;
 
-
+    private Integer idade;
 
 }

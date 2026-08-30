@@ -27,6 +27,5 @@ public class AvaliadorController {
         SituacaoCliente response = service.obterSituacaoCliente(cpf);
         return ResponseEntity.ok(response);
 
-        //TODO: arrumar porque o feign client não está funcionando, não está subindo
     }
 }
