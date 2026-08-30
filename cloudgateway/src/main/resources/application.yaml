@@ -6,10 +6,19 @@ spring:
     gateway:
       server:
         webflux:
-          discovery:
-            locator:
-              enabled: true
-              lower-case-service-id: true
+          routes:
+            - id: cartoes
+              uri: lb://cartoes
+              predicates:
+                - Path=/api/cartoes/**
+            - id: clientes
+              uri: lb://clientes
+              predicates:
+                - Path=/api/clientes/**
+            - id: avaliador
+              uri: lb://avaliador
+              predicates:
+                - Path=/api/avaliador/**
 server:
   port: 8080
 
