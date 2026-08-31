@@ -36,7 +36,7 @@ public class ClienteController {
         Optional<Cliente> cliente = service.findByCpf(cpf);
         if (cliente.isPresent()) {
             Cliente value = cliente.get();
-            return ResponseEntity.ok(new ClienteResponse(value.getNome(), value.getCpf(), value.getIdade()));
+            return ResponseEntity.ok(new ClienteResponse(value.getCpf(), value.getNome(), value.getIdade()));
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("mensagem", "CPF não localizado"));
     }
