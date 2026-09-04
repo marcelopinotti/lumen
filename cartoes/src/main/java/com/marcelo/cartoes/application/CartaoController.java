@@ -1,13 +1,11 @@
 package com.marcelo.cartoes.application;
 
-import com.marcelo.cartoes.domain.Cartao;
 import com.marcelo.cartoes.domain.ClienteCartao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @RestController
@@ -25,6 +23,14 @@ public class CartaoController {
         var savedCartao = cartaoService.save(cartao);
         var response = cartaoMapper.toResponse(savedCartao);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CartaoResponse> buscarPorId(@PathVariable Long id) { return ResponseEntity.ok(cartaoMapper.toResponse(cartaoService.buscarPorId(id))); }
+
+    @PostMapping("/associacoes")
+    public ResponseEntity<ClienteCartaoResponse> associar(@RequestBody AssociacaoCartaoRequest request) {
+        return ResponseEntity.status(201).body(clienteCartaoMapper.toResponse(clienteCartaoService.associar(request.cpf(), request.cartaoId(), request.limite())));
     }
 
     @GetMapping(params = "renda")
