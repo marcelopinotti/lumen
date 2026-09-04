@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="KubernetesApiPersistence">{}</component>
-  <component name="KubernetesApiProvider"><![CDATA[{}]]></component>
+  <component name="KubernetesApiProvider">{}</component>
   <component name="MavenProjectsManager">
     <option name="originalFiles">
       <list>
@@ -11,6 +11,7 @@
         <option value="$PROJECT_DIR$/cloudgateway/pom.xml" />
         <option value="$PROJECT_DIR$/cloudgateway/cartoes/pom.xml" />
         <option value="$PROJECT_DIR$/cartoes/pom.xml" />
+        <option value="$PROJECT_DIR$/avaliador/pom.xml" />
       </list>
     </option>
   </component>
