@@ -2,11 +2,12 @@ package com.marcelo.avaliador.domain;
 
 import java.math.BigDecimal;
 
-public record CartaoCliente(
+public record Cartao(
+        Long id,
         String nome,
         String bandeira,
-        BigDecimal limiteLiberado
+        BigDecimal renda,
+        String cor,
+        BigDecimal limiteBasico
 ) {
-
 }
-

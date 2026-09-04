@@ -17,7 +17,6 @@ public class ClienteCartao {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(unique = true)
     private String cpf;
     @ManyToOne
     @JoinColumn(name = "id_cartao")

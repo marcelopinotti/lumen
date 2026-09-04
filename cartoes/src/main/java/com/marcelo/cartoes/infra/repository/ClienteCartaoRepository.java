@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ClienteCartaoRepository extends JpaRepository<ClienteCartao, Long> {
     List<ClienteCartao> findByCpf(String cpf);
+    boolean existsByCpfAndCartaoId(String cpf, Long cartaoId);
 }

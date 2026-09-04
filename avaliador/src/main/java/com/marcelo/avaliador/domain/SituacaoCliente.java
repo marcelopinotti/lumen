@@ -1,19 +1,10 @@
 package com.marcelo.avaliador.domain;
 
-import lombok.*;
-
+import lombok.Builder;
 import java.util.List;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
-public class SituacaoCliente {
-
-    private DadosCliente cliente;
-
-    private List<CartaoCliente> cartoes;
-
-
-}
+public record SituacaoCliente(
+    DadosCliente cliente,
+    List<CartaoCliente> cartoes
+) {}

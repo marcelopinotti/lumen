@@ -1,16 +1,20 @@
 package com.marcelo.avaliador.domain;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-@Getter
-@Setter
-public class DadosCliente {
 
-    private String cpf;
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record DadosCliente(
+        String cpf,
+        String nome,
+        Integer idade,
+        String genero,
+        String dataNascimento) {
 
-    private String nome;
-
-    private Integer idade;
-
+    /** Construtor usado pelo Feign (clientes do banco local - sem genero/dataNascimento) */
+    public DadosCliente(String cpf, String nome, Integer idade) {
+        this(cpf, nome, idade, null, null);
+    }
 }

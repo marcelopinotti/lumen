@@ -10,7 +10,7 @@ public class ClienteCartaoMapper {
         return new ClienteCartaoResponse(
                 clienteCartao.getCartao().getNome(),
                 clienteCartao.getCartao().getBandeira().toString(),
-                clienteCartao.getLimite().toString()
+                clienteCartao.getLimite()
         );
     }
 }
