@@ -24,12 +24,16 @@ public class ClienteCartaoService {
         return clienteCartaoRepository.findByCpf(cpf);
     }
 
+    public boolean jaAssociado(String cpf, Long cartaoId) {
+        return clienteCartaoRepository.existsByCpfAndCartaoId(cpf, cartaoId);
+    }
+
     @Transactional
-    public ClienteCartao associar(String cpf, Long cartaoId, BigDecimal limite) {
+    public ClienteCartao associar(String cpf, Long cartaoId, BigDecimal limite, String enderecoDeEntrega) {
         if (clienteCartaoRepository.existsByCpfAndCartaoId(cpf, cartaoId)) throw new ResponseStatusException(HttpStatus.CONFLICT, "Cartão já associado a este CPF");
         Cartao cartao = cartaoRepository.findById(cartaoId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cartão não localizado"));
         ClienteCartao associacao = new ClienteCartao();
-        associacao.setCpf(cpf); associacao.setCartao(cartao); associacao.setLimite(limite);
+        associacao.setCpf(cpf); associacao.setCartao(cartao); associacao.setLimite(limite); associacao.setEnderecoDeEntrega(enderecoDeEntrega);
         return clienteCartaoRepository.save(associacao);
     }
 

@@ -8,6 +8,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(name = "uk_cliente_cartao_cpf_cartao", columnNames = {"cpf", "id_cartao"}))
 @NoArgsConstructor
 @Getter
 @Setter
@@ -22,4 +23,5 @@ public class ClienteCartao {
     @JoinColumn(name = "id_cartao")
     private Cartao cartao;
     private BigDecimal limite;
+    private String enderecoDeEntrega;
 }
