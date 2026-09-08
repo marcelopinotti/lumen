@@ -29,6 +29,10 @@ public class CpfApiClient {
     private String rapidApiKey;
 
     public Optional<DadosCpfApi> consultarCpf(String cpf) {
+        if (rapidApiKey == null || rapidApiKey.isBlank()) {
+            log.warn("Consulta de CPF externa indisponível: RAPIDAPI_KEY não configurada");
+            return Optional.empty();
+        }
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("x-rapidapi-key", rapidApiKey);
