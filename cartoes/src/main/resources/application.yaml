@@ -1,18 +1,41 @@
 spring:
   application:
     name: cartoes
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: 5672
+    username: lumen
+    password: lumen
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000ms
+          multiplier: 2
+          max-interval: 10000ms
 
   datasource:
     url: jdbc:postgresql://localhost:5432/lumen
     username: postgres
     password: ${DATABASE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 0
+    table: flyway_schema_history_cartoes
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
 
 
-
+mq:
+  queues:
+    emissao-cartoes: emissao-cartoes
+    emissao-cartoes-dlq: emissao-cartoes.dlq
+  exchanges:
+    emissao-cartoes-dlx: emissao-cartoes.dlx
 
 server:
   port: 0
