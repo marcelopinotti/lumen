@@ -19,6 +19,11 @@ spring:
               uri: lb://avaliador
               predicates:
                 - Path=/api/avaliador/**
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/realms/msrealm
 server:
   port: 8080
 
