@@ -1,0 +1,75 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ec2-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_HOST: ${{ secrets.AWS_HOST }}
+      AWS_USER: ${{ secrets.AWS_USER }}
+      AWS_SSH_KEY: ${{ secrets.AWS_SSH_KEY }}
+      AWS_KNOWN_HOSTS: ${{ secrets.AWS_KNOWN_HOSTS }}
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Check latest main commit
+        id: latest
+        run: |
+          if [ "$(git ls-remote origin refs/heads/main | cut -f1)" = "$RELEASE_SHA" ]; then
+            echo 'deploy=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure SSH
+        if: steps.latest.outputs.deploy == 'true'
+        run: |
+          test -n "$AWS_HOST" && test -n "$AWS_USER" && test -n "$AWS_SSH_KEY" && test -n "$AWS_KNOWN_HOSTS"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$AWS_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$AWS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        if: steps.latest.outputs.deploy == 'true'
+        run: |
+          git archive --format=tar.gz --output=/tmp/lumen-release.tar.gz "$RELEASE_SHA"
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 "$AWS_USER@$AWS_HOST" 'mkdir -p ~/lumen/releases'
+          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 /tmp/lumen-release.tar.gz "$AWS_USER@$AWS_HOST:~/lumen/releases/$RELEASE_SHA.tar.gz"
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 "$AWS_USER@$AWS_HOST" 'bash -se' -- "$RELEASE_SHA" <<'REMOTE'
+          set -euo pipefail
+          release="$HOME/lumen/releases/$1"
+          test -f "$HOME/lumen/.env"
+          for variable in POSTGRES_PASSWORD RABBITMQ_PASSWORD EUREKA_PASSWORD KEYCLOAK_ADMIN_PASSWORD JWT_ISSUER_URI; do
+            if ! grep -Eq "^${variable}=[^[:space:]#]+" "$HOME/lumen/.env"; then
+              echo "Missing $variable in ~/lumen/.env" >&2
+              exit 1
+            fi
+          done
+          mkdir -p "$release"
+          tar -xzf "$release.tar.gz" -C "$release"
+          rm "$release.tar.gz"
+          cd "$release"
+          compose=(docker compose --env-file "$HOME/lumen/.env" -p lumen -f docker-compose.yml)
+          "${compose[@]}" config --quiet
+          "${compose[@]}" up -d --build --remove-orphans --wait --wait-timeout 300
+          ln -sfn "$release" "$HOME/lumen/current"
+          REMOTE
