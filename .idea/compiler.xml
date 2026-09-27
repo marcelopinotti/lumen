@@ -7,19 +7,11 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="clientes" />
         <module name="eurekaserver" />
-        <module name="cloudgateway" />
-      </profile>
-      <profile name="Annotation profile for cartoes" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-        </processorPath>
-        <module name="cartoes" />
         <module name="avaliador" />
+        <module name="cloudgateway" />
+        <module name="clientes" />
+        <module name="cartoes" />
       </profile>
     </annotationProcessing>
   </component>
@@ -30,6 +22,7 @@
       <module name="clientes" options="-parameters" />
       <module name="cloudgateway" options="-parameters" />
       <module name="eurekaserver" options="-parameters" />
+      <module name="modular" options="" />
     </option>
   </component>
 </project>

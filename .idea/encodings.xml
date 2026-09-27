@@ -6,5 +6,7 @@
     <file url="file://$PROJECT_DIR$/clientes/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/cloudgateway/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/eurekaserver/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/modular/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/modular/src/main/resources" charset="UTF-8" />
   </component>
 </project>

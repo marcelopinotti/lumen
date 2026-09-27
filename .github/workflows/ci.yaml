@@ -53,6 +53,8 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-          cache-dependency-path: ${{ matrix.module }}/pom.xml
+          cache-dependency-path: |
+            modular/pom.xml
+            ${{ matrix.module }}/pom.xml
       - run: mvn --batch-mode --no-transfer-progress verify
         working-directory: ${{ matrix.module }}
