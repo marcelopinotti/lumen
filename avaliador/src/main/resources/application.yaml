@@ -1,14 +1,32 @@
 spring:
   application:
     name: avaliador
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: 5672
+    username: lumen
+    password: lumen
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
 
 server:
   port: 0
 
+mq:
+  queues:
+    emissao-cartoes: emissao-cartoes
+    emissao-cartoes-dlq: emissao-cartoes.dlq
+  exchanges:
+    emissao-cartoes-dlx: emissao-cartoes.dlx
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://user-lumen:${EUREKA_PASSWORD:user-lumen}@localhost:8761/eureka/
   instance:
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+
+rapidapi:
+  key: ${RAPIDAPI_KEY:}

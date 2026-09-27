@@ -4,6 +4,7 @@ import com.marcelo.avaliador.domain.*;
 import com.marcelo.avaliador.infra.clientes.CartoesControllerClient;
 import com.marcelo.avaliador.infra.clientes.ClienteControllerClient;
 import com.marcelo.avaliador.infra.cpfapi.CpfApiClient;
+import com.marcelo.avaliador.infra.mqueue.SolicitacaoEmissaoCartaoPublisher;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class AvaliadorService {
     private final ClienteControllerClient clienteControllerClient;
     private final CartoesControllerClient cartoesControllerClient;
     private final CpfApiClient cpfApiClient;
+    private final SolicitacaoEmissaoCartaoPublisher emissaoCartaoPublisher;
 
     public SituacaoCliente obterSituacaoCliente(String cpf) {
 
@@ -85,6 +87,9 @@ public class AvaliadorService {
         } catch (FeignException.NotFound e) {
             log.info("CPF {} não encontrado no banco local.", cpf);
             return null;
+        } catch (FeignException e) {
+            log.warn("Erro ao buscar cliente para CPF {}: {}", cpf, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Não foi possível consultar o cliente");
         }
     }
 
@@ -95,7 +100,7 @@ public class AvaliadorService {
             return response.getBody() != null ? response.getBody() : List.of();
         } catch (FeignException e) {
             log.warn("Erro ao buscar cartões para CPF {}: {}", cpf, e.getMessage());
-            return List.of();
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Não foi possível consultar os cartões do cliente");
         }
     }
 
@@ -103,7 +108,7 @@ public class AvaliadorService {
         validarMaioridade(dados.idade());
         BigDecimal limiteAprovado = calcularLimite(dados.renda() == null ? null : BigDecimal.valueOf(dados.renda()), dados.limiteBasico());
 
-       return new RetornoAvaliacao(
+        return new RetornoAvaliacao(
                 dados.cpf(),
                 dados.nome(),
                 limiteAprovado,
@@ -114,7 +119,10 @@ public class AvaliadorService {
     public SolicitacaoCartaoResponse solicitarCartao(SolicitacaoCartaoRequest request) {
         String cpf = normalizarCpf(request.cpf());
         validarRenda(request.rendaMensal());
-        if (request.cartaoId() == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O cartão é obrigatório");
+        if (request.cartaoId() == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O cartão é obrigatório");
+        if (request.enderecoDeEntrega() == null || request.enderecoDeEntrega().isBlank())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O endereço de entrega é obrigatório");
         DadosCliente cliente = buscarOuCadastrarCliente(cpf);
         validarMaioridade(cliente.idade());
         Cartao cartao = buscarCartao(request.cartaoId());
@@ -122,9 +130,11 @@ public class AvaliadorService {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "A renda declarada não atende ao cartão solicitado");
         BigDecimal limite = calcularLimite(request.rendaMensal(), cartao.limiteBasico());
         try {
-            cartoesControllerClient.associar(new AssociacaoCartaoRequest(cpf, cartao.id(), limite));
-        } catch (FeignException.Conflict e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cartão já associado a este CPF");
+            emissaoCartaoPublisher.solicitarEmissaoCartao(
+                    new EmissaoDeCartao(cartao.id(), cpf, request.enderecoDeEntrega(), limite));
+        } catch (Exception e) {
+            log.error("Erro ao publicar solicitação de emissão de cartão", e);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Não foi possível solicitar a emissão do cartão");
         }
         return new SolicitacaoCartaoResponse(cpf, cliente.nome(), cartao.id(), cartao.nome(), cartao.cor(), limite);
     }
@@ -136,32 +146,43 @@ public class AvaliadorService {
                 .filter(dados -> cpf.equals(normalizarCpf(dados.cpf())))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CPF não localizado na API externa"));
         Integer idade = calcularIdade(externo.dataNascimento());
-        if (idade == null) throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "A API externa não informou uma data de nascimento válida");
+        if (idade == null)
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "A API externa não informou uma data de nascimento válida");
         return clienteControllerClient.cadastrar(new ClienteCadastroRequest(cpf, externo.nome(), idade));
     }
 
     private Cartao buscarCartao(Long id) {
-        try { return cartoesControllerClient.buscarPorId(id); }
-        catch (FeignException.NotFound e) { throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cartão não localizado"); }
+        try {
+            return cartoesControllerClient.buscarPorId(id);
+        } catch (FeignException.NotFound e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cartão não localizado");
+        } catch (FeignException e) {
+            log.warn("Erro ao buscar cartão {}: {}", id, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Não foi possível consultar o cartão");
+        }
     }
 
     private void validarMaioridade(Integer idade) {
-        if (idade == null || idade < 18) throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "É necessário ter pelo menos 18 anos");
+        if (idade == null || idade < 18)
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "É necessário ter pelo menos 18 anos");
     }
 
     private void validarRenda(BigDecimal renda) {
-        if (renda == null || renda.signum() <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A renda mensal deve ser maior que zero");
+        if (renda == null || renda.signum() <= 0)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A renda mensal deve ser maior que zero");
     }
 
     private BigDecimal calcularLimite(BigDecimal renda, BigDecimal limiteBasico) {
         validarRenda(renda);
-        if (limiteBasico == null || limiteBasico.signum() <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O limite básico deve ser maior que zero");
+        if (limiteBasico == null || limiteBasico.signum() <= 0)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O limite básico deve ser maior que zero");
         return limiteBasico.min(renda);
     }
 
     private String normalizarCpf(String cpf) {
         String normalizado = cpf == null ? "" : cpf.replaceAll("\\D", "");
-        if (!normalizado.matches("\\d{11}")) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF deve conter 11 dígitos");
+        if (!normalizado.matches("\\d{11}"))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "CPF deve conter 11 dígitos");
         return normalizado;
     }
 }

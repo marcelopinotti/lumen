@@ -28,11 +28,6 @@ public class CartaoController {
     @GetMapping("/{id}")
     public ResponseEntity<CartaoResponse> buscarPorId(@PathVariable Long id) { return ResponseEntity.ok(cartaoMapper.toResponse(cartaoService.buscarPorId(id))); }
 
-    @PostMapping("/associacoes")
-    public ResponseEntity<ClienteCartaoResponse> associar(@RequestBody AssociacaoCartaoRequest request) {
-        return ResponseEntity.status(201).body(clienteCartaoMapper.toResponse(clienteCartaoService.associar(request.cpf(), request.cartaoId(), request.limite())));
-    }
-
     @GetMapping(params = "renda")
     public ResponseEntity<List<CartaoResponse>> renda(@RequestParam("renda") Long renda) {
         var cartoes = cartaoService.renda(renda);

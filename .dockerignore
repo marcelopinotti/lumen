@@ -1,0 +1,6 @@
+.git
+.idea
+.maestro
+**/target
+maestro*
+*.log

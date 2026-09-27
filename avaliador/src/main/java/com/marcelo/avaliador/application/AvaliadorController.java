@@ -1,11 +1,8 @@
 package com.marcelo.avaliador.application;
 
-import com.marcelo.avaliador.domain.DadosAvaliacao;
-import com.marcelo.avaliador.domain.RetornoAvaliacao;
-import com.marcelo.avaliador.domain.SolicitacaoCartaoRequest;
-import com.marcelo.avaliador.domain.SolicitacaoCartaoResponse;
-import com.marcelo.avaliador.domain.SituacaoCliente;
+import com.marcelo.avaliador.domain.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,10 +21,10 @@ public class AvaliadorController {
 
     @PostMapping("/solicitacoes")
     public ResponseEntity<SolicitacaoCartaoResponse> solicitarCartao(@RequestBody SolicitacaoCartaoRequest request) {
-        return ResponseEntity.status(201).body(service.solicitarCartao(request));
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(service.solicitarCartao(request));
     }
 
-    @GetMapping(value = "/situacao",params = "cpf")
+    @GetMapping(value = "/situacao", params = "cpf")
     public ResponseEntity<SituacaoCliente> SituacaoCliente(@RequestParam("cpf") String cpf) {
         SituacaoCliente response = service.obterSituacaoCliente(cpf);
         return ResponseEntity.ok(response);
