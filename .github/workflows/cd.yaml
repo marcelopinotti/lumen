@@ -51,10 +51,24 @@ jobs:
       - name: Deploy to EC2
         if: steps.latest.outputs.deploy == 'true'
         run: |
+          retry() {
+            local attempts="$1"
+            local delay="$2"
+            shift 2
+            local attempt=1
+            until "$@"; do
+              if [ "$attempt" -ge "$attempts" ]; then
+                return 1
+              fi
+              attempt=$((attempt + 1))
+              sleep "$delay"
+            done
+          }
+          ssh_opts=(-i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15)
           git archive --format=tar.gz --output=/tmp/lumen-release.tar.gz "$RELEASE_SHA"
-          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 "$AWS_USER@$AWS_HOST" 'mkdir -p ~/lumen/releases'
-          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 /tmp/lumen-release.tar.gz "$AWS_USER@$AWS_HOST:~/lumen/releases/$RELEASE_SHA.tar.gz"
-          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=15 "$AWS_USER@$AWS_HOST" 'bash -se' -- "$RELEASE_SHA" <<'REMOTE'
+          retry 3 10 ssh "${ssh_opts[@]}" "$AWS_USER@$AWS_HOST" 'mkdir -p ~/lumen/releases'
+          retry 3 10 scp "${ssh_opts[@]}" /tmp/lumen-release.tar.gz "$AWS_USER@$AWS_HOST:~/lumen/releases/$RELEASE_SHA.tar.gz"
+          retry 3 10 ssh "${ssh_opts[@]}" "$AWS_USER@$AWS_HOST" 'bash -se' -- "$RELEASE_SHA" <<'REMOTE'
           set -euo pipefail
           release="$HOME/lumen/releases/$1"
           test -f "$HOME/lumen/.env"
