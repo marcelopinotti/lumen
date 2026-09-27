@@ -44,9 +44,10 @@ jobs:
         run: |
           test -n "$AWS_HOST" && test -n "$AWS_USER" && test -n "$AWS_SSH_KEY" && test -n "$AWS_KNOWN_HOSTS"
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$AWS_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$AWS_SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           printf '%s\n' "$AWS_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/deploy_key >/dev/null
 
       - name: Deploy to EC2
         if: steps.latest.outputs.deploy == 'true'
